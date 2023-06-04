@@ -1,37 +1,40 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import Comic from '../entities/comic.js';
 import { onMounted } from 'vue';
 import MarvelController from '../controllers/marvel';
-import FirebaseController from '../controllers/firebase';
+import Comic from '../entities/comic';
 
-const loading = ref(false);
-
+const isLoading = ref(false);
 const comics = ref<Array<Comic>>([]);
 
 onMounted(async () => {
-    // for (const comic of comics.value) {
-    //     await comic.getFirestoreData();
-    // }
+    isLoading.value = true;
 
     comics.value = await MarvelController.getComicsByAuthor('Jim Nausedas');
-    FirebaseController.getComments();
+    const promises = [];
+    for (const comic of comics.value) {
+        promises.push(comic.getComicsAdditionalData());
+        promises.push(comic.getComments());
+    }
+
+    await Promise.allSettled(promises);
+
+    isLoading.value = false;
 });
 </script>
 
 <template>
+    <v-overlay :model-value="isLoading" class="align-center justify-center">
+        <v-progress-circular color="primary" indeterminate size="64"></v-progress-circular>
+    </v-overlay>
+
     <v-container>
         <v-item-group selected-class="bg-primary">
             <v-container>
                 <v-row>
                     <v-col v-for="comic in comics" :key="comic.title" cols="12" md="4">
                         <v-item>
-                            <v-card :loading="loading" class="mx-auto my-12" max-width="374">
-                                <template v-slot:loader="{ isActive }">
-                                    <v-progress-linear :active="isActive" color="deep-purple" height="4"
-                                        indeterminate></v-progress-linear>
-                                </template>
-
+                            <v-card class="mx-auto my-12" max-width="374">
                                 <v-img height="250" :src="comic.thumbnail"></v-img>
 
                                 <v-card-item>
@@ -92,7 +95,7 @@ onMounted(async () => {
                                         <v-card-text>
                                             <v-row>
                                                 <v-col cols="8">
-                                                    {{ comic.getRandomComment() }}
+                                                    {{ comic.getRandomComment()?.comment }}
                                                 </v-col>
                                                 <v-col cols="4">
                                                     <router-link :to="{ name: 'comments', params: { comicId: comic.id } }">

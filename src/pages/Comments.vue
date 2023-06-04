@@ -1,26 +1,41 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
-// import { useRoute } from 'vue-router'
+import FirebaseController, { ComicComment } from '../controllers/firebase';
+import { useRoute } from 'vue-router'
 
-// const route = useRoute();
+type ComicCommentWithBtnSelected = ComicComment & {
+    btnSelected?: number;
+};
+type LikeButtonSelected = 0 | 1 | undefined;
+
+const route = useRoute();
 const showCommentPublishError = ref(false);
-const items = ref([
-    {
-        btnSelected: undefined,
-    },
-    {
-        btnSelected: 0,
-    },
-    {
-        btnSelected: 1
-    },
-    {
-        btnSelected: undefined
-    },
-]);
+const comments = ref<Array<ComicCommentWithBtnSelected>>([]);
 
-onMounted(() => {
-    // console.log(route.params.comicId);
+function getBtnSelected(comment: ComicComment): LikeButtonSelected {
+    if (comment.isLiked) {
+        return 0;
+    }
+    if (comment.isDisliked) {
+        return 1;
+    }
+
+    return undefined;
+}
+
+onMounted(async () => {
+    if (!route.params.comicId || Array.isArray(route.params.comicId)) {
+        // redirect to home
+        return;
+    }
+
+    const comicComments = await FirebaseController.getCommentsFor(+route.params.comicId);
+    comments.value = comicComments.map((comment) => {
+        return {
+            ...comment,
+            btnSelected: getBtnSelected(comment),
+        };
+    });
 });
 </script>
 
@@ -41,23 +56,21 @@ onMounted(() => {
                                 <v-btn>Submit</v-btn>
                             </v-col>
                             <v-col cols="12">
-                                <v-alert v-model="showCommentPublishError" closable text="Something went wrong. Try later!" type="error"
-                                    variant="outlined"></v-alert>
+                                <v-alert v-model="showCommentPublishError" closable text="Something went wrong. Try later!"
+                                    type="error" variant="outlined"></v-alert>
                             </v-col>
                         </v-row>
                     </v-col>
-                    <v-col cols="12">
+                    <v-col cols="1">
                         <v-timeline side="end" align="start">
-                            <v-timeline-item v-for="(comment, i) in items" :key="i" dot-color="grey-lighten-1"
+                            <v-timeline-item v-for="(comment, i) in comments" :key="i" dot-color="grey-lighten-1"
                                 icon="mdi-account-circle" fill-dot>
                                 <v-card>
                                     <v-card-title class="text-h6 bg-grey-lighten-1">
                                         Lorem Ipsum Dolor
                                     </v-card-title>
                                     <v-card-text class="bg-white text--primary">
-                                        <p>Lorem ipsum dolor sit amet, no nam oblique veritus. Commune scaevola imperdiet
-                                            nec ut, sed euismod convenire principes at. Est et nobis iisque percipit, an vim
-                                            zril disputando voluptatibus, vix an salutandi sententiae.</p>
+                                        <p>{{ comment.comment }}</p>
 
                                         <v-btn-toggle v-slot="{ isSelected }" color="primary" variant="plain"
                                             v-model="comment.btnSelected">

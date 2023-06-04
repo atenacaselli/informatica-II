@@ -1,4 +1,4 @@
-import ComicFirestore from './comic-firestore';
+import FirebaseController, { ComicAdditionalData, ComicComment } from '../controllers/firebase';
 
 export default class Comic {
     public readonly id: number;
@@ -7,15 +7,16 @@ export default class Comic {
     public readonly price: number | null;
     public readonly thumbnail: string;
     public readonly creatorNames: Array<string>;
-    public readonly comments: Array<string>;
+
+    public comments: Array<ComicComment>;
     public get rating(): number {
-        return this.comicFirestore?.rating ?? 0;
+        return this.comicAdditionalData?.rating ?? 0;
     }
     public set rating(val: number) {
-        this.comicFirestore!.rating = val;
+        this.comicAdditionalData!.rating = val;
     }
 
-    private comicFirestore?: ComicFirestore;
+    private comicAdditionalData?: ComicAdditionalData;
 
     public constructor(id: number, title: string, seriesName: string, price: number | undefined, thumbnail: string, creatorNames: Array<string>) {
         this.id = id;
@@ -24,24 +25,32 @@ export default class Comic {
         this.price = price ?? null;
         this.thumbnail = thumbnail;
         this.creatorNames = creatorNames;
-        this.comments = ['ciao', 'come', 'stai', '?'];
+        this.comments = [];
     }
 
-    public async getFirestoreData(): Promise<ComicFirestore> {
-        if (this.comicFirestore != null) {
-            return this.comicFirestore;
+    public async getComments(): Promise<Array<ComicComment>> {
+        if (this.comments.length > 0) {
+            return this.comments;
         }
 
-        this.comicFirestore = await new Promise<ComicFirestore>((res) => {
-            res(new ComicFirestore(['first comment'], 3));
-        });
+        this.comments = await FirebaseController.getCommentsFor(this.id);
 
-        return this.comicFirestore;
+        return this.comments;
     }
 
-    public getRandomComment(): string {
+    public async getComicsAdditionalData(): Promise<ComicAdditionalData | null> {
+        if (this.comicAdditionalData != null) {
+            return this.comicAdditionalData;
+        }
+
+        this.comicAdditionalData = await FirebaseController.getComicsAdditionalDataById(this.id) ?? undefined;
+
+        return this.comicAdditionalData ?? null;
+    }
+
+    public getRandomComment(): ComicComment | null {
         if (this.comments.length === 0) {
-            return '';
+            return null;
         }
 
         const randomIdx = Math.floor(Math.random() * this.comments.length);
