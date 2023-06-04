@@ -13,7 +13,11 @@ export default class Comic {
         return this.comicAdditionalData?.rating ?? 0;
     }
     public set rating(val: number) {
-        this.comicAdditionalData!.rating = val;
+        if (this.comicAdditionalData == null) {
+            return;
+        }
+
+        this.comicAdditionalData.rating = val;
     }
 
     private comicAdditionalData?: ComicAdditionalData;

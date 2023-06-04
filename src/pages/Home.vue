@@ -1,11 +1,18 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import { onMounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import MarvelController from '../controllers/marvel';
 import Comic from '../entities/comic';
+import FirebaseController from '../controllers/firebase';
+import { Unsubscribe } from '@firebase/util';
 
 const isLoading = ref(false);
 const comics = ref<Array<Comic>>([]);
+
+let listenForRatingChangesUnsubscribe: Unsubscribe | undefined;
+
+async function ratingChanged(comicId: number, rating: number) {
+    await FirebaseController.updateComic(comicId, { rating: rating });
+}
 
 onMounted(async () => {
     isLoading.value = true;
@@ -15,11 +22,24 @@ onMounted(async () => {
     for (const comic of comics.value) {
         promises.push(comic.getComicsAdditionalData());
         promises.push(comic.getComments());
+
+        listenForRatingChangesUnsubscribe = FirebaseController.listenForRatingChanges(comic.id, (_, rating) => {
+            const foundComic = comics.value.find(c => c.id === comic.id);
+            if (foundComic == null) {
+                return;
+            }
+
+            foundComic.rating = rating;
+        });
     }
 
     await Promise.allSettled(promises);
 
     isLoading.value = false;
+});
+
+onUnmounted(() => {
+    listenForRatingChangesUnsubscribe?.();
 });
 </script>
 
@@ -56,8 +76,8 @@ onMounted(async () => {
 
                                 <v-card-text>
                                     <v-row align="center" class="mx-0">
-                                        <v-rating v-model="comic.rating" color="amber" size="small" hover
-                                            half-increments></v-rating>
+                                        <v-rating v-model="comic.rating" color="amber" size="small" hover half-increments
+                                            @update:modelValue="ratingChanged(comic.id, comic.rating)"></v-rating>
 
                                         <div class="text-grey ms-4">
                                             {{ comic.rating }}
