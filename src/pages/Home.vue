@@ -1,31 +1,21 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import Comic from '../entities/Comic';
+import Comic from '../entities/comic.js';
 import { onMounted } from 'vue';
+import MarvelController from '../controllers/marvel';
+import FirebaseController from '../controllers/firebase';
 
 const loading = ref(false);
 
-const comics = ref<Array<Comic>>([
-    new Comic(1,
-        'Sentry, the (Trade Paperback)',
-        'Sentry, the (1999)',
-        9.99,
-        'http://i.annihil.us/u/prod/marvel/i/mg/f/c0/4bc66d78f1bee.jpg',
-        ['Jim Nausedas']),
-    new Comic(
-        2,
-        'test1',
-        'cc',
-        20.90,
-        'https://www.focusjunior.it/content/uploads/2016/09/spiaggia.jpg',
-        ['Paul Jenkins'],
-    ),
-]);
+const comics = ref<Array<Comic>>([]);
 
 onMounted(async () => {
-    for (const comic of comics.value) {
-        await comic.getFirestoreData();
-    }
+    // for (const comic of comics.value) {
+    //     await comic.getFirestoreData();
+    // }
+
+    comics.value = await MarvelController.getComicsByAuthor('Jim Nausedas');
+    FirebaseController.getComments();
 });
 </script>
 

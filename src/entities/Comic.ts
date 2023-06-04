@@ -1,4 +1,4 @@
-import ComicFirestore from "./ComicFirestore";
+import ComicFirestore from './comic-firestore';
 
 export default class Comic {
     public readonly id: number;
