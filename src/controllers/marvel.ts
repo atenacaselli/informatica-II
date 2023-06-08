@@ -20,8 +20,6 @@ export default class MarvelController {
 
         for (const result of data.results) {
             for (const author of result.creators.items) {
-                // this.authors.add(author.name);
-
                 const newComic = new Comic(
                     result.id,
                     result.title,
@@ -29,7 +27,6 @@ export default class MarvelController {
                     result.prices?.[0].price,
                     `${result.thumbnail.path}.${result.thumbnail.extension}`,
                     result.creators.items.map(creator => creator.name).sort(),
-                    // result.creators.items.sort((creatorA, creatorB) => creatorA.name.localeCompare(creatorB.name)).map(creator => creator.name),
                 );
 
                 promises.push(newComic.fetchComicsAdditionalData());
@@ -44,7 +41,6 @@ export default class MarvelController {
                 this.idsComic.set(newComic.id, newComic);
             }
         }
-
         
         const authorComicsArray = Array.from(this.authorComics);
         authorComicsArray.sort(([nameA], [nameB]) => nameA.localeCompare(nameB));
@@ -55,7 +51,7 @@ export default class MarvelController {
             this.authors.add(authorComic[0]);
             this.authorComics.set(authorComic[0], authorComic[1]);
         }
-        
+
         await Promise.allSettled(promises);
     }
 
