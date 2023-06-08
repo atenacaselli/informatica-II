@@ -12,10 +12,12 @@ import * as directives from 'vuetify/directives'
 import * as VueRouter from 'vue-router';
 
 const routes = [
-    { path: '/', component: Home },
+    { name: 'home', path: '/', component: Home },
+    { name: 'authors', path: '/authors/:authorName', component: Home },
     { name: 'comments', path: '/comments/:comicId', component: Comments },
-    { path: '/:pathMatch(.*)*', component: PageNotFound },
+    { name: '404', path: '/:pathMatch(.*)*', component: PageNotFound },
 ];
+
 
 const vuetify = createVuetify({
     components,
