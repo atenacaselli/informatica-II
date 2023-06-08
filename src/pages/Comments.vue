@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from 'vue';
 import FirebaseController, { ComicComment } from '../controllers/firebase';
-import { useRoute } from 'vue-router'
+import Comic from '../entities/comic';
+import MarvelController from '../controllers/marvel';
+import { useRoute, useRouter } from 'vue-router'
 import { Unsubscribe } from '@firebase/util';
 
 type ComicCommentWithBtnSelected = ComicComment & {
@@ -10,11 +12,14 @@ type ComicCommentWithBtnSelected = ComicComment & {
 type LikeButtonSelected = 0 | 1 | undefined;
 
 const route = useRoute();
+const router = useRouter();
+
 const showCommentPublishError = ref(false);
 const comments = ref<Array<ComicCommentWithBtnSelected>>([]);
 const commentText = ref('');
 const commentTitle = ref('');
 const isSubmitting = ref(false);
+const imgSrc = ref('');
 
 let listenForCommentsChangesUnsubscribe: Unsubscribe | undefined;
 
@@ -50,13 +55,25 @@ async function btnToggleChanged(commentId: string, newStatus: LikeButtonSelected
     });
 }
 
+async function getComic(): Promise<Comic | null> {
+    let comic = MarvelController.getComicById(+route.params.comicId);
+    if (comic == null) {
+        await MarvelController.initPromise;
+    }
+
+    return comic ?? MarvelController.getComicById(+route.params.comicId);
+}
+
 onMounted(async () => {
-    if (!route.params.comicId || Array.isArray(route.params.comicId)) {
-        // redirect to home
+    const comic = await getComic();
+    if (comic == null) {        
+        router.push({ name: 'home' });
         return;
     }
 
-    const comicComments = await FirebaseController.getCommentsFor(+route.params.comicId);
+    imgSrc.value = comic.thumbnailUrl;
+
+    const comicComments = await FirebaseController.getCommentsFor(comic.id);
     comments.value = comicComments.map((comment) => {
         return {
             ...comment,
@@ -64,7 +81,7 @@ onMounted(async () => {
         };
     });
 
-    listenForCommentsChangesUnsubscribe = FirebaseController.listenForCommentsChanges(+route.params.comicId, (comment, changeType) => {
+    listenForCommentsChangesUnsubscribe = FirebaseController.listenForCommentsChanges(comic.id, (comment, changeType) => {
         if (changeType === 'added') {
             comments.value.unshift(comment);
         } else if (changeType === 'modified') {
@@ -88,9 +105,9 @@ onUnmounted(() => {
 <template>
     <v-row style="height: 100vh;">
         <v-col cols="2">
-            <v-img height="100%" cover src="http://i.annihil.us/u/prod/marvel/i/mg/f/c0/4bc66d78f1bee.jpg"></v-img>
+            <div :style="{ height: '100%', backgroundImage: `url('${imgSrc}')`, backgroundRepeat: 'repeat-y' }"></div>
         </v-col>
-        <v-col cols="10">
+        <v-col cols=" 10">
             <v-container>
                 <v-row>
                     <v-col cols="12">
