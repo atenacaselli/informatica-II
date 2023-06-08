@@ -26,7 +26,6 @@ function updateModelValue() {
 onMounted(async () => {
   isLoading.value = true;
 
-  MarvelController.initPromise = MarvelController.init();
   await MarvelController.initPromise;
 
   authors.value.push(...MarvelController.getAuthors());
