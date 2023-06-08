@@ -5,6 +5,7 @@ import Comic from '../entities/comic';
 import MarvelController from '../controllers/marvel';
 import { useRoute, useRouter } from 'vue-router'
 import { Unsubscribe } from '@firebase/util';
+import { VForm } from 'vuetify/components';
 
 type ComicCommentWithBtnSelected = ComicComment & {
     btnSelected?: number;
@@ -15,11 +16,26 @@ const route = useRoute();
 const router = useRouter();
 
 const showCommentPublishError = ref(false);
+const commentForm = ref<VForm | null>(null);
 const comments = ref<Array<ComicCommentWithBtnSelected>>([]);
 const commentText = ref('');
 const commentTitle = ref('');
 const isSubmitting = ref(false);
+const isCommentFormValid = ref(false);
 const imgSrc = ref('');
+
+const titleRules = [
+    (value: any) => {
+        if (value) return true
+        return 'Title is requred.'
+    },
+];
+const commentRules = [
+    (value: any) => {
+        if (value) return true
+        return 'At least a character is requred.'
+    },
+];
 
 let listenForCommentsChangesUnsubscribe: Unsubscribe | undefined;
 
@@ -44,6 +60,7 @@ async function addCommentBtnClicked() {
     await FirebaseController.addCommentTo(+route.params.comicId, commentTitle.value, commentText.value);
     commentTitle.value = '';
     commentText.value = '';
+    commentForm.value?.reset();
 
     isSubmitting.value = false;
 }
@@ -66,7 +83,7 @@ async function getComic(): Promise<Comic | null> {
 
 onMounted(async () => {
     const comic = await getComic();
-    if (comic == null) {        
+    if (comic == null) {
         router.push({ name: 'home' });
         return;
     }
@@ -103,23 +120,26 @@ onUnmounted(() => {
             <v-container>
                 <v-row>
                     <v-col cols="12">
-                        <v-row>
-                            <v-col cols="12">
-                                <v-text-field :disabled="isSubmitting" label="Comment title"
-                                    v-model="commentTitle"></v-text-field>
-                            </v-col>
-                            <v-col cols="12">
-                                <v-textarea :disabled="isSubmitting" v-model="commentText"
-                                    prepend-inner-icon="mdi-account-circle" counter label="Comment"></v-textarea>
-                            </v-col>
-                            <v-col cols="12" class="text-right">
-                                <v-btn :loading="isSubmitting" @click="addCommentBtnClicked()">Submit</v-btn>
-                            </v-col>
-                            <v-col cols="12">
-                                <v-alert v-model="showCommentPublishError" closable text="Something went wrong. Try later!"
-                                    type="error" variant="outlined"></v-alert>
-                            </v-col>
-                        </v-row>
+                        <v-form ref="commentForm" :disabled="isSubmitting" v-model="isCommentFormValid">
+                            <v-row>
+                                <v-col cols="12">
+                                    <v-text-field label="Comment title" v-model="commentTitle"
+                                        :rules="titleRules"></v-text-field>
+                                </v-col>
+                                <v-col cols="12">
+                                    <v-textarea v-model="commentText" :rules="commentRules"
+                                        prepend-inner-icon="mdi-account-circle" counter label="Comment"></v-textarea>
+                                </v-col>
+                                <v-col cols="12" class="text-right">
+                                    <v-btn :loading="isSubmitting" :disabled="!isCommentFormValid"
+                                        @click="addCommentBtnClicked()">Submit</v-btn>
+                                </v-col>
+                                <v-col cols="12">
+                                    <v-alert v-model="showCommentPublishError" closable
+                                        text="Something went wrong. Try later!" type="error" variant="outlined"></v-alert>
+                                </v-col>
+                            </v-row>
+                        </v-form>
                     </v-col>
                     <v-col cols="1">
                         <v-timeline side="end" align="start">
