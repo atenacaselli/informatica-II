@@ -73,14 +73,6 @@ onMounted(async () => {
 
     imgSrc.value = comic.thumbnailUrl;
 
-    const comicComments = await FirebaseController.getCommentsFor(comic.id);
-    comments.value = comicComments.map((comment) => {
-        return {
-            ...comment,
-            btnSelected: getBtnSelected(comment),
-        };
-    });
-
     listenForCommentsChangesUnsubscribe = FirebaseController.listenForCommentsChanges(comic.id, (comment, changeType) => {
         if (changeType === 'added') {
             comments.value.unshift(comment);
