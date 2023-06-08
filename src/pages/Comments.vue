@@ -25,14 +25,14 @@ const isCommentFormValid = ref(false);
 const imgSrc = ref('');
 
 const titleRules = [
-    (value: any) => {
-        if (value) return true
+    (value: string | null) => {
+        if (value != null && value.trim().length > 0) return true
         return 'Title is requred.'
     },
 ];
 const commentRules = [
-    (value: any) => {
-        if (value) return true
+    (value: string | null) => {
+        if (value != null && value.trim().length > 0) return true
         return 'At least a character is requred.'
     },
 ];
@@ -51,10 +51,6 @@ function getBtnSelected(comment: ComicComment): LikeButtonSelected {
 }
 
 async function addCommentBtnClicked() {
-    if (commentText.value === '' || commentTitle.value === '') {
-        return;
-    }
-
     isSubmitting.value = true;
 
     await FirebaseController.addCommentTo(+route.params.comicId, commentTitle.value, commentText.value);
