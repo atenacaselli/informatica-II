@@ -8,7 +8,7 @@ import { Unsubscribe } from '@firebase/util';
 import { VForm } from 'vuetify/components';
 
 type ComicCommentWithBtnSelected = ComicComment & {
-    btnSelected?: number;
+    btnSelected: LikeButtonSelected;
 };
 type LikeButtonSelected = 0 | 1 | undefined;
 
@@ -88,7 +88,7 @@ onMounted(async () => {
 
     listenForCommentsChangesUnsubscribe = FirebaseController.listenForCommentsChanges(comic.id, (comment, changeType) => {
         if (changeType === 'added') {
-            comments.value.unshift(comment);
+            comments.value.unshift({ ...comment, btnSelected: undefined });
         } else if (changeType === 'modified') {
             const foundComment = comments.value.find(c => c.id === comment.id);
             if (foundComment == null) {
